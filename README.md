@@ -1,126 +1,57 @@
 # ServerWatch
 
-**ServerWatch** is a demo **server monitoring dashboard** built with **Next.js** (App Router). It shows a fleet overview with status, response time, and uptime, plus per-server detail pages. Auth and APIs are **mocked** so you can run the UI locally without a backend.
-
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css&logoColor=white)
+A small server monitoring dashboard demo: see your “servers” in a list, filter and sort them, open details for each one, and sign in with mock auth. There is no real backend—everything runs in the browser with fake data so you can focus on the UI.
 
 ---
 
-## Features
+## How to run it
 
-- **Dashboard** — Grid or table view, search, status filter, column sorting (client-side on loaded data).
-- **Server detail** — Single-server view driven by dynamic route `/dashboard/[server_id]`.
-- **Auth screens** — Login and signup with mock validation; session stored in **localStorage** and mirrored to an **`auth_token` cookie** for route protection.
-- **Route protection** — [`proxy.ts`](https://nextjs.org/docs/app/api-reference/file-conventions/proxy) (Next.js 16) redirects unauthenticated users away from `/dashboard` and signed-in users away from `/login` and `/signup`.
-- **UI structure** — Reusable atoms → templates under `components/common/`, feature UI under `components/ui/`.
+1. Install dependencies:
 
----
+   ```bash
+   npm install
+   ```
 
-## Prerequisites
+2. Start the dev server:
 
-- **Node.js** 20+ (recommended), or **Bun** — matching what you use for local development.
-- **npm**, **pnpm**, **yarn**, or **bun** for installs and scripts.
+   ```bash
+   npm run dev
+   ```
 
----
+3. Open **http://localhost:3000** in your browser. You’ll land on the dashboard (the home page redirects there).
 
-## Quick start
+**Try logging in** (optional): use `admin@serverwatch.io` / `password123`, or create an account on the signup page. Signups only live until you refresh the page—that’s normal for this mock setup.
 
-Clone the repository, install dependencies, and start the dev server:
+**Other commands:**
 
-```bash
-cd server-demo
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). The home route redirects to **`/dashboard`**.
-
-### Demo login (mock API)
-
-Use the seeded account from `integration/mock_data/auth.mock.ts`:
-
-| Field | Value |
-|--------|--------|
-| Email | `admin@serverwatch.io` |
-| Password | `password123` |
-
-You can also **sign up** with a new email; new accounts exist only in memory until you reload the app (mock limitation).
+- `npm run build` — production build  
+- `npm run start` — run the built app  
+- `npm run lint` — check code with ESLint  
 
 ---
 
-## Scripts
+## How it’s built (short version)
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start the development server with hot reload. |
-| `npm run build` | Create an optimized production build. |
-| `npm run start` | Run the production server (after `build`). |
-| `npm run lint` | Run ESLint on the project. |
+**Stack:** Next.js (App Router), React, TypeScript, Tailwind. Icons from Lucide.
 
----
+**Data:** Server lists and auth responses come from mock modules under `integration/`, not from a real API. That keeps the app easy to run and change without env vars or databases.
 
-## Project layout (overview)
+**Pages:** Routes live in `app/`. The dashboard loads server data in server components; filters and sorting happen mostly on the client so the UI feels quick.
 
-```
-app/                    # App Router: pages, layouts, loading.tsx
-proxy.ts                # Next.js proxy — auth redirects (dashboard vs login/signup)
-lib/                    # Constants, auth session helpers, cn/formatters
-integration/            # Services, types, mock data (API-shaped layer)
-hooks/                  # Client hooks (URL params, dashboard filters)
-helpers/                # Pure filter/sort helpers for servers
-components/common/      # Atoms, molecules, organisms, templates
-components/ui/          # Auth + dashboard feature components
-docs/CODE.md            # In-depth code documentation
-```
+**Auth:** Login/signup call mock services. On success we save the user in **localStorage** and set a small **cookie** so `proxy.ts` (Next.js route guard) can send logged-out people to login and logged-in people away from the auth pages.
 
-For architecture, data flow, and extension points, see **[docs/CODE.md](docs/CODE.md)**.
+**Components:** Shared pieces (buttons, layout shells, etc.) sit in `components/common/`. Screens that tie everything together are in `components/ui/`. It’s a simple “small pieces → bigger pieces” structure so the code isn’t one giant file.
+
+**More detail:** If you want a deeper walkthrough of folders and flows, see [docs/CODE.md](docs/CODE.md).
 
 ---
 
-## Tech stack
+## Why this design?
 
-- **[Next.js 16](https://nextjs.org/docs)** — App Router, Server Components, `next/font` (Geist).
-- **React 19** — Client components for interactive UI.
-- **Tailwind CSS 4** — Styling (`app/globals.css`, PostCSS).
-- **TypeScript** — Strict mode (`tsconfig.json`).
-- **Lucide React** — Icons.
+**Not over-engineered.** The split is on purpose, not ceremony: UI doesn’t know where data comes from—that lives in `integration/`. Shared building blocks live in `components/common/`; feature screens in `components/ui/`. Helpers and hooks hold small bits of logic so we’re not copying the same filter/sort/URL logic everywhere. Each folder has one job; that’s easier to read than one giant file or a pile of abstractions you don’t need yet.
 
-Some packages in `package.json` (for example MUI or `next-auth`) are not used in the current source tree; you can adopt or remove them as you evolve the app.
+**Room to grow.** When you add a real API, you mostly swap the implementations in `integration/service/` (and types if the contract changes). Pages and most components can stay as-is because they already talk to functions and types, not raw mock JSON sprinkled through the app. New routes follow the same `app/` pattern; new dashboard bits drop into `components/ui/dashboard` and reuse what’s in `common/`.
 
----
+**Easy to maintain.** Route names and labels stay in `lib/constants.ts`. Types sit next to the integration layer, so when the API shape changes, TypeScript nudges you toward the right fixes. Auth is explicit: mock services today, cookie + `proxy.ts` for route protection—clear seams if you move to real sessions later.
 
-## Configuration
-
-- **Path alias** — `@/` maps to the repository root (`tsconfig.json`).
-- **Proxy matcher** — Defined in `proxy.ts` (`export const config.matcher`) so the proxy skips static assets and Next internals.
-
-No `.env` file is required for the default mock setup. When you add a real API, use `.env.local` (and document variables here).
-
----
-
-## Deployment
-
-ServerWatch is a standard Next.js app. Deploy to **[Vercel](https://vercel.com)** or any host that supports Node:
-
-```bash
-npm run build && npm run start
-```
-
-Ensure your production URL and cookie settings (`SameSite`, `Secure`) match your deployment if you move beyond the mock auth flow.
-
----
-
-## Documentation
-
-| Document | Contents |
-|----------|----------|
-| [docs/CODE.md](docs/CODE.md) | Architecture, modules, auth, services, how to replace mocks |
-
----
-
-## License
-
-This project is **private** / unlicensed unless you add a `LICENSE` file. Add one if you plan to open-source it.
+**Reality check:** Mock auth and localStorage are fine for a demo; production would use proper server-side sessions or tokens. The point is the **structure** scales: swapping auth or data is a bounded change, not a rewrite. See [docs/CODE.md](docs/CODE.md) for more.
